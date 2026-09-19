@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#1c2a3a">
 <title>DRAMA — Document Request Portal</title>
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,11 +29,15 @@
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   body{
     font-family:'Inter',system-ui,sans-serif;
     background:var(--paper);
     color:var(--ink);
     min-height:100vh;
+    min-height:100dvh;
+    padding-left:env(safe-area-inset-left);
+    padding-right:env(safe-area-inset-right);
     -webkit-font-smoothing:antialiased;
   }
   h1,h2,h3,.serif{font-family:'Lora',Georgia,serif;}
@@ -43,16 +48,19 @@
   ::selection{background:var(--gold);color:#fff;}
 
   .hidden{display:none !important;}
+  button{-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+  :focus-visible{outline:2px solid var(--seal);outline-offset:2px;}
+  .side-nav button:focus-visible,#mobile-tabs button:focus-visible,#logout-btn:focus-visible,#logout-btn-m:focus-visible{outline-color:var(--gold);}
+  /* 16px inputs stop iOS Safari from zooming the page on focus */
+  @media (max-width:760px),(pointer:coarse){input,select,textarea{font-size:16px !important;}}
+  @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;scroll-behavior:auto !important;}}
 
   /* ---------- AUTH SCREEN ---------- */
   #auth-screen{
     min-height:100vh;
+    min-height:100dvh;
     display:grid;
     grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-  }
-  @media (max-width:820px){
-    #auth-screen{grid-template-columns:1fr;}
-    .auth-brand{min-height:220px;}
   }
   .auth-brand{
     background:linear-gradient(165deg,var(--ink) 0%, #24384d 100%);
@@ -103,6 +111,16 @@
     padding:40px 28px;
   }
   .auth-card{width:100%;max-width:380px;}
+  @media (max-width:820px){
+    #auth-screen{grid-template-columns:1fr;grid-template-rows:auto 1fr;}
+    .auth-brand{min-height:0;padding:24px 22px 22px;gap:18px;}
+    .auth-brand::after,.auth-brand::before{display:none;}
+    .seal-mark{width:42px;height:42px;font-size:17px;}
+    .brand-name{font-size:26px;margin:14px 0 4px;}
+    .brand-tag{font-size:13.5px;}
+    .brand-foot{font-size:12px;}
+    .auth-form-side{align-items:flex-start;padding:28px 20px 40px;}
+  }
   .auth-card h2{font-size:23px;margin:0 0 6px;}
   .auth-sub{color:var(--slate);font-size:14px;margin:0 0 26px;line-height:1.5;}
   .field{margin-bottom:15px;}
@@ -135,6 +153,7 @@
   }
   .btn-primary:hover{background:var(--seal-dark);}
   .btn-primary:disabled{opacity:0.55;cursor:default;}
+  .btn-primary:active:not(:disabled){transform:translateY(1px);}
   .btn-ghost{
     width:100%;
     background:transparent;
@@ -157,15 +176,17 @@
   .auth-msg.ok{background:#e7f2ec;color:var(--closed-green);}
 
   /* ---------- APP SHELL ---------- */
-  #app{display:none;min-height:100vh;grid-template-columns:220px 1fr;}
+  #app{display:none;min-height:100vh;min-height:100dvh;grid-template-columns:220px minmax(0,1fr);}
   #app.show{display:grid;}
-  @media (max-width:760px){#app.show{grid-template-columns:1fr;}#sidebar{display:none;}#mobile-tabs{display:flex;}}
+  
 
   #sidebar{
     background:var(--ink);
     color:#e9e5d8;
     padding:26px 20px;
     display:flex;flex-direction:column;
+    position:sticky;top:0;align-self:start;
+    height:100vh;height:100dvh;overflow-y:auto;
   }
   .side-brand{display:flex;align-items:center;gap:10px;margin-bottom:34px;}
   .side-brand .seal-mark{width:34px;height:34px;font-size:13px;}
@@ -185,12 +206,20 @@
   #logout-btn{width:100%;background:none;border:1px solid rgba(255,255,255,0.18);color:#e9e5d8;padding:8px;border-radius:var(--radius-s);font-size:13px;}
   #logout-btn:hover{border-color:rgba(255,255,255,0.4);}
 
-  #mobile-tabs{display:none;position:sticky;top:0;background:var(--ink);z-index:20;padding:8px 10px;gap:6px;}
-  #mobile-tabs button{flex:1;background:none;border:none;color:#c9c2ae;padding:9px 4px;font-size:12.5px;border-radius:var(--radius-s);}
-  #mobile-tabs button.active{background:rgba(176,141,62,0.2);color:#fff;}
+  #mobile-nav{display:none;position:sticky;top:0;z-index:20;background:var(--ink);padding-top:env(safe-area-inset-top);}
+  .mobile-top{display:flex;align-items:center;gap:10px;padding:10px 12px 2px;color:#e9e5d8;}
+  .mobile-top .seal-mark{width:28px;height:28px;font-size:11px;border-width:1.5px;flex-shrink:0;}
+  .m-brand{font-family:'Lora',serif;font-weight:600;font-size:16px;}
+  .m-user{margin-left:auto;min-width:0;font-size:12.5px;color:#c9c2ae;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #logout-btn-m{flex-shrink:0;background:none;border:1px solid rgba(255,255,255,0.22);color:#e9e5d8;padding:6px 12px;border-radius:var(--radius-s);font-size:12.5px;}
+  #mobile-tabs{display:flex;padding:6px 8px 8px;gap:4px;overflow-x:auto;}
+  #mobile-tabs button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;background:none;border:none;color:#c9c2ae;padding:10px 8px;font-size:13px;border-radius:var(--radius-s);}
+  #mobile-tabs button.active{background:rgba(176,141,62,0.2);color:#fff;font-weight:600;}
+  /* must come after the base rules above, or the sidebar/nav swap silently loses the cascade */
+  @media (max-width:760px){#app.show{display:block;}#sidebar{display:none;}#mobile-nav{display:block;}}
 
-  main{padding:34px 40px;max-width:920px;width:100%;}
-  @media (max-width:600px){main{padding:20px 16px;}}
+  main{padding:34px 40px;max-width:920px;width:100%;min-width:0;margin:0 auto;}
+  @media (max-width:600px){main{padding:20px 16px calc(24px + env(safe-area-inset-bottom));}}
   .view{display:none;}
   .view.active{display:block;}
   .view-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:10px;}
@@ -206,9 +235,10 @@
     border-radius:var(--radius-m);
     overflow:hidden;
     cursor:pointer;
-    transition:border-color .15s;
+    transition:border-color .15s,box-shadow .15s;
   }
-  .ticket-stub:hover{border-color:var(--slate-light);}
+  .ticket-stub:hover{border-color:var(--slate-light);box-shadow:0 8px 18px -14px rgba(28,42,58,.45);}
+  .ticket-stub:active{background:#fbfaf6;}
   .stub-edge{
     width:14px;flex-shrink:0;
     background-image:radial-gradient(circle at 0 8px, transparent 5px, var(--paper) 5.5px);
@@ -218,11 +248,15 @@
     border-right:1px dashed var(--line);
   }
   .stub-body{padding:15px 18px;flex:1;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;}
-  .stub-main{min-width:0;}
-  .stub-num{font-size:12px;color:var(--slate-light);letter-spacing:0.5px;}
+  .stub-main{min-width:0;flex:1 1 200px;}
+  .stub-num{font-size:12px;color:var(--slate);letter-spacing:0.5px;}
   .stub-type{font-size:15.5px;font-weight:600;margin-top:2px;}
   .stub-date{font-size:12.5px;color:var(--slate);margin-top:3px;}
-  .stub-status{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:500;white-space:nowrap;}
+  .stub-status{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;padding:4px 11px 4px 9px;border-radius:999px;background:#f3f1ea;background:color-mix(in srgb,var(--c,#5b6472) 11%,#fff);}
+  @media (max-width:520px){
+    .stub-body{padding:13px 14px;gap:10px;}
+    .stub-status{white-space:normal;}
+  }
   .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
   .empty-state{
     border:1px dashed var(--line);border-radius:var(--radius-m);
@@ -236,71 +270,140 @@
   .step-dots{display:flex;gap:6px;margin-bottom:22px;}
   .step-dots div{height:3px;flex:1;background:var(--line);border-radius:2px;}
   .step-dots div.done{background:var(--seal);}
-  .doc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
+  .doc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(220px,100%),1fr));gap:12px;}
   .doc-card{
     border:1px solid var(--line);border-radius:var(--radius-m);
     padding:16px;background:var(--panel);text-align:left;
   }
-  .doc-card:hover{border-color:var(--seal);}
+  .doc-card{cursor:pointer;transition:border-color .15s,box-shadow .15s;}
+  .doc-card:hover{border-color:var(--seal);box-shadow:0 8px 18px -14px rgba(140,59,59,.55);}
   .doc-card.selected{border-color:var(--seal);background:#fbf3f1;}
   .doc-card b{display:block;font-size:14.5px;margin-bottom:4px;}
   .doc-card span{font-size:12.5px;color:var(--slate);}
   .form-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-m);padding:26px;}
   .form-actions{display:flex;justify-content:space-between;margin-top:22px;gap:10px;}
   .form-actions button{width:auto;padding:10px 22px;}
-  .review-row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px;gap:16px;}
-  .review-row span:first-child{color:var(--slate);flex-shrink:0;}
-  .review-row span:last-child{text-align:right;font-weight:500;}
+  .field input.invalid,.field textarea.invalid,.field select.invalid{border-color:var(--danger);background:#fdf6f6;}
+  @media (max-width:520px){
+    .field-row{grid-template-columns:1fr;gap:0;}
+    .form-card{padding:18px 16px;}
+    .form-actions button{flex:1;padding:12px 16px;}
+  }
 
-  /* ---------- TICKET DETAIL / CHAT ---------- */
+  /* ---------- TICKET DETAIL / CHAT (true full screen) ---------- */
+  body.chat-open{overflow:hidden;}
   #ticket-detail-overlay{
-    position:fixed;inset:0;background:rgba(28,42,58,0.5);
-    display:none;align-items:center;justify-content:center;z-index:50;padding:20px;
+    position:fixed;left:0;right:0;top:var(--vvt,0px);
+    height:100vh;height:100dvh;height:var(--vvh,100dvh);
+    background:var(--panel);z-index:50;display:none;overflow:hidden;
   }
-  #ticket-detail-overlay.show{display:flex;}
+  #ticket-detail-overlay.show{display:block;}
   #ticket-detail{
-    background:var(--panel);border-radius:8px;
-    width:100%;max-width:640px;max-height:88vh;
-    display:flex;flex-direction:column;overflow:hidden;
+    width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;background:var(--panel);
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    animation:td-in .18s ease-out;
   }
-  .td-head{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
-  .td-head h3{margin:0 0 3px;font-size:17px;}
-  .td-head .stub-num{font-size:12px;}
-  #td-close-x{background:none;border:none;font-size:20px;color:var(--slate);line-height:1;padding:2px 6px;}
-  .td-status-bar{padding:9px 22px;background:#f4f1ea;font-size:13px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);}
-  .td-tabs{display:flex;border-bottom:1px solid var(--line);}
-  .td-tabs button{flex:1;background:none;border:none;padding:10px;font-size:13.5px;color:var(--slate);border-bottom:2px solid transparent;}
+  @keyframes td-in{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:none;}}
+  /* keyboard up (touch devices): give every pixel to the conversation */
+  #ticket-detail-overlay.kb-open #ticket-detail{padding-bottom:0;}
+  #ticket-detail-overlay.kb-open .td-tabs,
+  #ticket-detail-overlay.kb-open .td-footer,
+  #ticket-detail-overlay.kb-open .td-banner,
+  #ticket-detail-overlay.kb-open .td-head-meta{display:none;}
+  #ticket-detail-overlay.kb-open .td-head{padding-top:4px;padding-bottom:4px;}
+
+  .td-head{flex-shrink:0;display:flex;align-items:center;gap:4px;padding:8px 16px 8px 6px;border-bottom:1px solid var(--line);background:var(--panel);}
+  #td-close-x{flex-shrink:0;width:44px;height:44px;display:grid;place-items:center;background:none;border:none;border-radius:50%;color:var(--ink);}
+  #td-close-x:hover{background:#f1eee6;}
+  #td-close-x svg{width:22px;height:22px;}
+  .td-head-main{min-width:0;flex:1;}
+  .td-head h3{margin:0;font-size:16.5px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .td-head-meta{display:flex;align-items:center;gap:10px;margin-top:1px;font-size:12.5px;color:var(--slate);min-width:0;}
+  .td-head-meta .stub-num{font-size:12px;flex-shrink:0;}
+  .td-status{display:inline-flex;align-items:center;gap:6px;min-width:0;}
+  .td-status span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+  .td-tabs{flex-shrink:0;display:flex;border-bottom:1px solid var(--line);background:var(--panel);}
+  .td-tabs button{flex:1;background:none;border:none;padding:12px 10px;font-size:13.5px;color:var(--slate);border-bottom:2px solid transparent;}
   .td-tabs button.active{color:var(--ink);border-bottom-color:var(--seal);font-weight:600;}
-  .td-panel{display:none;flex:1;min-height:0;flex-direction:column;}
+
+  .td-body{flex:1;min-height:0;display:flex;flex-direction:column;}
+  .td-panel{display:none;flex:1;min-height:0;min-width:0;flex-direction:column;}
   .td-panel.active{display:flex;}
-  .td-details{padding:18px 22px;overflow-y:auto;}
-  .td-chat-log{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:10px;background:#fbfaf7;}
-  .msg{max-width:76%;padding:9px 12px;border-radius:10px;font-size:14px;line-height:1.4;}
-  .msg.me{align-self:flex-end;background:var(--ink);color:#f1efe8;border-bottom-right-radius:3px;}
-  .msg.them{align-self:flex-start;background:#eee9dd;color:var(--ink);border-bottom-left-radius:3px;}
-  .msg .sender{font-size:11px;opacity:0.7;margin-bottom:3px;font-weight:600;}
-  .msg img{max-width:100%;border-radius:6px;display:block;margin-top:2px;}
-  .msg audio{width:220px;max-width:100%;margin-top:2px;}
-  .msg time{display:block;font-size:10.5px;opacity:0.6;margin-top:4px;}
-  .td-composer{border-top:1px solid var(--line);padding:10px 12px;display:flex;gap:8px;align-items:flex-end;}
-  .td-composer textarea{flex:1;resize:none;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:14px;max-height:90px;}
-  .icon-btn{background:none;border:1px solid var(--line);width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--slate);}
+  .td-details{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:8px 20px 24px;}
+  .td-side-title{display:none;margin:0;padding:18px 20px 0;font-size:16px;}
+  @media (min-width:960px){
+    .td-tabs{display:none;}
+    .td-body{flex-direction:row;}
+    #td-panel-chat{display:flex;flex:1;}
+    #td-panel-details{display:flex;flex:0 0 360px;border-left:1px solid var(--line);background:#fdfcf9;}
+    .td-side-title{display:block;}
+  }
+  .review-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px;gap:16px;}
+  .review-row span:first-child{color:var(--slate);flex-shrink:0;}
+  .review-row span:last-child{text-align:right;font-weight:500;min-width:0;overflow-wrap:anywhere;white-space:pre-wrap;}
+  @media (max-width:520px){.review-row{flex-direction:column;gap:2px;}.review-row span:last-child{text-align:left;}}
+
+  .td-chat-log{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:16px max(14px,calc((100% - 780px)/2)) 14px;display:flex;flex-direction:column;gap:8px;background:#fbfaf7;}
+  .day-chip{align-self:center;font-size:11.5px;color:var(--slate);background:#efebe0;border-radius:999px;padding:3px 11px;margin:8px 0 2px;}
+  .chat-empty{margin:auto;text-align:center;color:var(--slate);font-size:13.5px;line-height:1.5;max-width:260px;padding:20px;}
+  .chat-empty b{display:block;color:var(--ink);font-family:'Lora',Georgia,serif;font-size:15.5px;font-weight:600;margin-bottom:4px;}
+  .msg{max-width:min(78%,520px);padding:8px 12px 6px;border-radius:14px;font-size:14.5px;line-height:1.42;overflow-wrap:anywhere;}
+  .msg .txt{white-space:pre-wrap;}
+  .msg.me{align-self:flex-end;background:var(--ink);color:#f1efe8;border-bottom-right-radius:4px;}
+  .msg.them{align-self:flex-start;background:#eee9dd;color:var(--ink);border-bottom-left-radius:4px;}
+  .msg.cont{margin-top:-4px;}
+  .msg .sender{font-size:11.5px;opacity:0.7;margin-bottom:2px;font-weight:600;}
+  .msg img{display:block;width:260px;max-width:100%;height:auto;max-height:min(46vh,320px);object-fit:cover;border-radius:8px;margin-top:2px;cursor:zoom-in;background:rgba(0,0,0,.06);}
+  .msg audio{display:block;width:240px;max-width:100%;height:40px;margin-top:2px;}
+  .msg time{display:block;text-align:right;font-size:10.5px;opacity:0.68;margin-top:3px;}
+  @media (max-width:520px){.msg{max-width:86%;}}
+
+  .td-composer{flex-shrink:0;display:flex;gap:8px;align-items:flex-end;background:var(--panel);border-top:1px solid var(--line);padding:10px max(12px,calc((100% - 780px)/2)) 10px;}
+  .td-composer textarea{flex:1;min-width:0;display:block;resize:none;border:1px solid var(--line);border-radius:20px;padding:9px 14px;font-size:15px;line-height:1.4;min-height:40px;max-height:132px;overflow-y:auto;background:#fff;color:var(--ink);}
+  .td-composer textarea:focus{outline:2px solid var(--seal);outline-offset:0;border-color:var(--seal);}
+  .icon-btn{background:none;border:1px solid var(--line);width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--slate);transition:background .15s,border-color .15s,color .15s;}
   .icon-btn:hover{border-color:var(--slate);color:var(--ink);}
-  .icon-btn.recording{background:var(--danger);border-color:var(--danger);color:#fff;}
+  .icon-btn.recording{background:var(--danger);border-color:var(--danger);color:#fff;animation:rec-pulse 1.2s infinite;}
   .icon-btn.send{background:var(--seal);border-color:var(--seal);color:#fff;}
   .icon-btn.send:hover{background:var(--seal-dark);}
-  .icon-btn svg{width:17px;height:17px;}
-  .td-footer{padding:14px 22px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
-  .td-footer button{width:auto;padding:9px 18px;}
-  .closed-banner{padding:12px 22px;background:#e7f2ec;color:var(--closed-green);font-size:13.5px;font-weight:500;border-top:1px solid var(--line);}
+  .icon-btn svg{width:18px;height:18px;}
+  @keyframes rec-pulse{0%{box-shadow:0 0 0 0 rgba(166,58,58,.5);}70%{box-shadow:0 0 0 10px rgba(166,58,58,0);}100%{box-shadow:0 0 0 0 rgba(166,58,58,0);}}
+  @media (pointer:coarse){.icon-btn{width:44px;height:44px;}.td-composer textarea{min-height:44px;}}
 
-  .toast{
-    position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
-    background:var(--ink);color:#fff;padding:11px 20px;border-radius:6px;
-    font-size:13.5px;z-index:100;opacity:0;pointer-events:none;transition:opacity .2s;
+  .td-details .review-row{flex-direction:column;gap:2px;}
+  .td-details .review-row span:last-child{text-align:left;}
+  /* short screens (phones in landscape): squeeze the chrome so the conversation keeps its room */
+  @media (max-height:480px){
+    .td-head{padding-top:2px;padding-bottom:2px;}
+    #td-close-x{width:38px;height:38px;}
+    .td-head-main{display:flex;align-items:center;gap:12px;}
+    .td-head h3{font-size:15px;flex:0 1 auto;}
+    .td-head-meta{margin-top:0;flex-shrink:0;}
+    .td-tabs button{padding:6px 10px;font-size:13px;}
+    .td-composer{padding-top:6px;padding-bottom:6px;}
+    .icon-btn{width:38px;height:38px;}
+    .td-composer textarea{min-height:38px;padding-top:7px;padding-bottom:7px;}
+    .td-footer{padding-top:5px;padding-bottom:5px;}
+    .td-footer button{padding:6px 16px;}
   }
-  .toast.show{opacity:1;}
 
+  .td-footer{flex-shrink:0;padding:10px 16px;border-top:1px solid var(--line);background:var(--panel);display:flex;justify-content:space-between;align-items:center;gap:8px 14px;flex-wrap:wrap;}
+  .td-footer button{width:auto;padding:9px 18px;margin-left:auto;}
+  .td-footer button.armed{background:var(--ink);}
+  #td-footer-note{font-size:12.5px;color:var(--slate);flex:1 1 180px;min-width:0;}
+  #td-footer-note:empty{display:none;}
+  @media (max-width:520px){.td-footer{padding:8px 12px;}.td-footer button{flex:1 1 100%;padding:11px 18px;}}
+  .td-banner{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:10px 14px;flex-wrap:wrap;padding:11px 18px;font-size:13.5px;font-weight:500;border-top:1px solid var(--line);}
+  .td-banner.is-closed{background:#e7f2ec;color:var(--closed-green);}
+  .td-banner.is-open{background:#fdf3e3;color:var(--progress-amber);}
+  .td-banner button{width:auto;padding:8px 18px;font-size:13px;}
+
+  #lightbox{position:fixed;inset:0;z-index:150;background:rgba(12,18,26,.94);display:flex;align-items:center;justify-content:center;padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom);cursor:zoom-out;}
+  #lightbox img{max-width:100%;max-height:100%;object-fit:contain;border-radius:4px;}
+  #lightbox button{position:absolute;top:calc(10px + env(safe-area-inset-top));right:12px;width:44px;height:44px;border-radius:50%;border:none;background:rgba(255,255,255,.14);color:#fff;font-size:20px;line-height:1;}
+  .toast{position:fixed;top:calc(14px + env(safe-area-inset-top));left:50%;transform:translate(-50%,-8px);width:max-content;max-width:calc(100vw - 32px);text-align:center;background:var(--ink);color:#fff;padding:11px 20px;border-radius:6px;font-size:13.5px;z-index:300;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;box-shadow:0 8px 24px -8px rgba(0,0,0,.4);}
+  .toast.show{opacity:1;transform:translate(-50%,0);}
   #loading-veil{position:fixed;inset:0;background:var(--paper);display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;z-index:200;color:var(--slate);font-size:14px;text-align:center;padding:20px;}
   #loading-veil button{background:var(--seal);color:#fff;border:none;padding:9px 20px;border-radius:var(--radius-s);font-size:13.5px;font-weight:600;}
   #loading-veil button:hover{background:var(--seal-dark);}
@@ -329,7 +432,7 @@
     setTimeout(function(){ showError("Taking longer than expected — Firebase may not have loaded."); }, 8000);
   })();
 </script>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- ================= AUTH ================= -->
 <div id="auth-screen" style="display:none;">
@@ -369,9 +472,16 @@
 
 <!-- ================= APP ================= -->
 <div id="app">
-  <div id="mobile-tabs">
-    <button data-view="requests" class="active">My requests</button>
-    <button data-view="new">New request</button>
+  <div id="mobile-nav">
+    <div class="mobile-top">
+      <div class="seal-mark">D</div><span class="m-brand">DRAMA</span>
+      <span class="m-user" id="m-user-name"></span>
+      <button id="logout-btn-m">Sign out</button>
+    </div>
+    <div id="mobile-tabs">
+      <button data-view="requests" class="active">My requests</button>
+      <button data-view="new">New request</button>
+    </div>
   </div>
   <div id="sidebar">
     <div class="side-brand"><div class="seal-mark">D</div><span>DRAMA</span></div>
@@ -407,18 +517,18 @@
       <div id="step-2" class="hidden form-card">
         <h3 id="step2-title" style="margin-top:0;">Details</h3>
         <div class="field-row">
-          <div class="field"><label>Last name</label><input id="f-lastname"></div>
-          <div class="field"><label>First name</label><input id="f-firstname"></div>
+          <div class="field"><label>Last name</label><input id="f-lastname" autocomplete="family-name"></div>
+          <div class="field"><label>First name</label><input id="f-firstname" autocomplete="given-name"></div>
         </div>
         <div class="field-row">
-          <div class="field"><label>Middle name</label><input id="f-middlename" placeholder="Write N/A if none"></div>
-          <div class="field"><label>LRN (Learner Reference No.)</label><input id="f-lrn"></div>
+          <div class="field"><label>Middle name</label><input id="f-middlename" placeholder="Write N/A if none" autocomplete="additional-name"></div>
+          <div class="field"><label>LRN (Learner Reference No.)</label><input id="f-lrn" inputmode="numeric" autocomplete="off"></div>
         </div>
         <div class="field-row">
           <div class="field"><label>Grade &amp; section</label><input id="f-gradesection" placeholder="e.g. 9 - Fullerene"></div>
-          <div class="field"><label>Contact number</label><input id="f-contact"></div>
+          <div class="field"><label>Contact number</label><input id="f-contact" type="tel" inputmode="tel" autocomplete="tel"></div>
         </div>
-        <div class="field"><label>Email for updates</label><input id="f-email" type="email"></div>
+        <div class="field"><label>Email for updates</label><input id="f-email" type="email" autocomplete="email"></div>
         <div class="field hidden" id="f-copies-wrap"><label>Number of copies</label><input id="f-copies" type="number" min="1" value="1"></div>
         <div class="field"><label>Preferred claim / response date</label><input id="f-claimdate" type="date"></div>
         <div class="field"><label id="f-reason-label">Purpose</label><textarea id="f-reason" rows="4" placeholder="What is this for, and any details staff should know"></textarea></div>
@@ -440,45 +550,57 @@
   </main>
 </div>
 
-<!-- ================= TICKET DETAIL ================= -->
-<div id="ticket-detail-overlay">
+<!-- ================= TICKET DETAIL (full screen) ================= -->
+<div id="ticket-detail-overlay" role="dialog" aria-modal="true" aria-labelledby="td-title">
   <div id="ticket-detail">
     <div class="td-head">
-      <div>
+      <button id="td-close-x" aria-label="Back to tickets">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="td-head-main">
         <h3 id="td-title">—</h3>
-        <div class="stub-num mono" id="td-num">—</div>
-      </div>
-      <button id="td-close-x">✕</button>
-    </div>
-    <div class="td-status-bar"><div class="dot" id="td-status-dot"></div><span id="td-status-text">—</span></div>
-    <div class="td-tabs">
-      <button class="active" data-tab="chat">Chat</button>
-      <button data-tab="details">Details submitted</button>
-    </div>
-    <div class="td-panel active" id="td-panel-chat">
-      <div class="td-chat-log" id="td-chat-log"></div>
-      <div class="td-composer">
-        <button class="icon-btn" id="td-attach-btn" title="Attach photo">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.5V7a2 2 0 0 0-2-2H8L5 8H3v11a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1"/><circle cx="12" cy="13" r="3.2"/></svg>
-        </button>
-        <input type="file" id="td-file-input" accept="image/*" class="hidden">
-        <button class="icon-btn" id="td-record-btn" title="Record voice message">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg>
-        </button>
-        <textarea id="td-text-input" rows="1" placeholder="Write a message…"></textarea>
-        <button class="icon-btn send" id="td-send-btn" title="Send">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13M22 2 15 22l-4-9-9-4 20-7Z"/></svg>
-        </button>
+        <div class="td-head-meta">
+          <span class="stub-num mono" id="td-num">—</span>
+          <span class="td-status"><span class="dot" id="td-status-dot"></span><span id="td-status-text">—</span></span>
+        </div>
       </div>
     </div>
-    <div class="td-panel" id="td-panel-details">
-      <div class="td-details" id="td-details-body"></div>
+    <div class="td-tabs" role="tablist">
+      <button class="active" data-tab="chat" role="tab" aria-selected="true">Chat</button>
+      <button data-tab="details" role="tab" aria-selected="false">Details submitted</button>
+    </div>
+    <div class="td-body">
+      <div class="td-panel active" id="td-panel-chat">
+        <div class="td-chat-log" id="td-chat-log" role="log" aria-live="polite"></div>
+        <div class="td-composer" id="td-composer">
+          <button class="icon-btn" id="td-attach-btn" title="Attach photo" aria-label="Attach photo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.5V7a2 2 0 0 0-2-2H8L5 8H3v11a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1"/><circle cx="12" cy="13" r="3.2"/></svg>
+          </button>
+          <input type="file" id="td-file-input" accept="image/*" class="hidden">
+          <button class="icon-btn" id="td-record-btn" title="Record voice message" aria-label="Record voice message" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg>
+          </button>
+          <textarea id="td-text-input" rows="1" placeholder="Write a message…" aria-label="Message"></textarea>
+          <button class="icon-btn send" id="td-send-btn" title="Send" aria-label="Send message">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13M22 2 15 22l-4-9-9-4 20-7Z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="td-panel" id="td-panel-details">
+        <h4 class="td-side-title serif">Details submitted</h4>
+        <div class="td-details" id="td-details-body"></div>
+      </div>
     </div>
     <div class="td-footer" id="td-footer">
-      <span id="td-footer-note" style="font-size:12.5px;color:var(--slate);"></span>
-      <button class="btn-primary" id="td-resolve-btn" style="width:auto;">Mark my side resolved</button>
+      <span id="td-footer-note"></span>
+      <button class="btn-primary" id="td-resolve-btn">Mark my side resolved</button>
     </div>
   </div>
+</div>
+
+<div id="lightbox" class="hidden" role="dialog" aria-modal="true" aria-label="Photo">
+  <img alt="Photo sent in chat">
+  <button aria-label="Close photo">✕</button>
 </div>
 
 <script>
@@ -491,7 +613,7 @@
     ]);
     const { initializeApp } = appMod;
     const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } = authMod;
-    const { getDatabase, ref, push, set, get, update, onValue, runTransaction, serverTimestamp } = dbMod;
+    const { getDatabase, ref, push, set, get, update, onValue, runTransaction, query, orderByChild, equalTo, serverTimestamp } = dbMod;
 
 const firebaseConfig = {
   apiKey: "AIzaSyCMn38-vei_6gICI0HR1rqxKxSwN3FrmnY",
@@ -526,6 +648,8 @@ let openTicketKey = null;
 let ticketMessagesUnsub = null;
 let mediaRecorder = null;
 let audioChunks = [];
+let ticketsUnsub = null;
+let signingUp = false;
 
 const $ = (id) => document.getElementById(id);
 function toast(msg){
@@ -534,35 +658,44 @@ function toast(msg){
 }
 
 /* ---------------- AUTH ---------------- */
+function showSignedOut(){
+  if (ticketsUnsub){ ticketsUnsub(); ticketsUnsub = null; }
+  hideTicketDetail();
+  currentUser = null;
+  allTickets = {};
+  $("app").classList.remove("show");
+  $("auth-screen").style.display = "grid";
+}
+
+async function enterApp(user){
+  const snap = await get(ref(db, "users/" + user.uid));
+  const profile = snap.exists() ? snap.val() : null;
+  if (profile && profile.role === "staff"){
+    // Wrong portal for this account
+    await signOut(auth);
+    showSignedOut();
+    showAuthMsg("That account is registered as staff. Use the staff desk portal instead.", "error");
+    return;
+  }
+  currentUser = { uid:user.uid, ...profile, name: (profile && profile.name) || user.displayName || user.email };
+  $("auth-screen").style.display = "none";
+  $("app").classList.add("show");
+  $("side-user-name").textContent = currentUser.name;
+  $("side-user-email").textContent = user.email;
+  $("m-user-name").textContent = currentUser.name;
+  switchView("requests");
+  listenToMyTickets();
+}
+
 onAuthStateChanged(auth, async (user) => {
   try {
-      $("loading-veil").style.display = "none";
-      if (user){
-        const snap = await get(ref(db, "users/" + user.uid));
-        const profile = snap.exists() ? snap.val() : null;
-        if (profile && profile.role === "staff"){
-          // Wrong portal for this account
-          await signOut(auth);
-          $("auth-screen").style.display = "grid";
-          $("app").classList.remove("show");
-          showAuthMsg("That account is registered as staff. Use the staff desk portal instead.", "error");
-          return;
-        }
-        currentUser = { uid:user.uid, ...profile };
-        $("auth-screen").style.display = "none";
-        $("app").classList.add("show");
-        $("side-user-name").textContent = currentUser.name || user.email;
-        $("side-user-email").textContent = user.email;
-        listenToMyTickets();
-      } else {
-        currentUser = null;
-        $("auth-screen").style.display = "grid";
-        $("app").classList.remove("show");
-      }  } catch(e) {
+    $("loading-veil").style.display = "none";
+    if (signingUp) return; // the sign-up handler continues once the profile has been saved
+    if (user) await enterApp(user);
+    else showSignedOut();
+  } catch(e) {
     console.error("DRAMA auth startup error:", e);
-    currentUser = null;
-    $("app").classList.remove("show");
-    $("auth-screen").style.display = "grid";
+    showSignedOut();
     showAuthMsg("Could not load your account data. Check your connection and reload.", "error");
   }
 });
@@ -585,13 +718,21 @@ $("su-submit").onclick = async () => {
     showAuthMsg("Fill in your name, email, and a password of at least 6 characters.", "error"); return;
   }
   $("su-submit").disabled = true;
+  signingUp = true; // stops the auth listener from reading the profile before it exists
+  let created = false;
   try{
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    created = true;
     await updateProfile(cred.user, { displayName: name });
     await set(ref(db, "users/" + cred.user.uid), { name, email, role:"student", createdAt: serverTimestamp() });
+    signingUp = false;
+    await enterApp(cred.user);
   } catch(e){
+    signingUp = false;
+    if (created){ try{ await signOut(auth); }catch(_){} }
     showAuthMsg(friendlyAuthError(e), "error");
   } finally {
+    signingUp = false;
     $("su-submit").disabled = false;
   }
 };
@@ -611,6 +752,12 @@ $("li-submit").onclick = async () => {
 };
 
 $("logout-btn").onclick = () => signOut(auth);
+$("logout-btn-m").onclick = () => signOut(auth);
+
+// Enter submits the auth forms
+[["li-email","li-submit"],["li-pass","li-submit"],["su-name","su-submit"],["su-email","su-submit"],["su-pass","su-submit"]].forEach(([field, btn]) => {
+  $(field).addEventListener("keydown", (e) => { if (e.key === "Enter"){ e.preventDefault(); $(btn).click(); } });
+});
 
 function friendlyAuthError(e){
   const c = e.code || "";
@@ -628,6 +775,7 @@ function switchView(name){
   document.querySelectorAll(".side-nav button, #mobile-tabs button").forEach(b=>{
     b.classList.toggle("active", b.dataset.view === name);
   });
+  window.scrollTo(0, 0);
   if (name === "new") resetNewRequestFlow();
 }
 document.querySelectorAll(".side-nav button, #mobile-tabs button").forEach(b=>{
@@ -657,9 +805,17 @@ function resetNewRequestFlow(){
   $("f-lrn").value=""; $("f-gradesection").value=""; $("f-contact").value="";
   $("f-email").value = currentUser && currentUser.email ? currentUser.email : "";
   $("f-copies").value = 1; $("f-claimdate").value=""; $("f-reason").value="";
+  $("f-claimdate").min = todayStr();
+  document.querySelectorAll(".invalid").forEach(el => el.classList.remove("invalid"));
 }
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+document.addEventListener("input", (e) => { if (e.target.classList) e.target.classList.remove("invalid"); });
 
 function goToStep(n){
+  window.scrollTo(0, 0);
   $("step-1").classList.toggle("hidden", n!==1);
   $("step-2").classList.toggle("hidden", n!==2);
   $("step-3").classList.toggle("hidden", n!==3);
@@ -680,7 +836,7 @@ $("step2-back").onclick = () => goToStep(1);
 $("step2-next").onclick = () => {
   const required = ["f-lastname","f-firstname","f-gradesection","f-contact","f-email","f-reason"];
   for (const id of required){
-    if (!$(id).value.trim()){ toast("Please fill in all required fields."); $(id).focus(); return; }
+    if (!$(id).value.trim()){ $(id).classList.add("invalid"); toast("Please fill in all required fields."); $(id).focus(); return; }
   }
   buildReview();
   goToStep(3);
@@ -728,7 +884,7 @@ $("step3-submit").onclick = async () => {
     await set(newRef, {
       ticketNumber,
       studentUid: currentUser.uid,
-      studentName: currentUser.name,
+      studentName: currentUser.name || currentUser.email || "Student",
       docType: selectedDocType.label,
       fields,
       status: "open",
@@ -757,16 +913,16 @@ const STATUS_META = {
 };
 
 function listenToMyTickets(){
-  const q = ref(db, "tickets");
-  onValue(q, (snap) => {
+  if (ticketsUnsub) ticketsUnsub();
+  if (!currentUser) return;
+  // Ask Firebase for this student's tickets instead of downloading every student's tickets.
+  const ticketsQuery = query(ref(db, "tickets"), orderByChild("studentUid"), equalTo(currentUser.uid));
+  ticketsUnsub = onValue(ticketsQuery, (snap) => {
     allTickets = {};
-    snap.forEach(child => {
-      const t = child.val();
-      if (t.studentUid === currentUser.uid) allTickets[child.key] = t;
-    });
+    snap.forEach(child => { allTickets[child.key] = child.val(); });
     renderTicketList();
     if (openTicketKey && allTickets[openTicketKey]) renderTicketDetailHeader(openTicketKey);
-  });
+  }, (err) => { console.error(err); toast("Couldn't load your requests. Check your connection."); });
 }
 
 function renderTicketList(){
@@ -781,20 +937,21 @@ function renderTicketList(){
     let waitNote = "";
     if (t.status !== "closed" && t.studentClosed) waitNote = " · you marked resolved";
     return `
-      <div class="ticket-stub" data-key="${k}">
+      <div class="ticket-stub" data-key="${escapeHtml(k)}" role="button" tabindex="0">
         <div class="stub-edge"></div>
         <div class="stub-body">
           <div class="stub-main">
-            <div class="stub-num mono">${t.ticketNumber}</div>
+            <div class="stub-num mono">${escapeHtml(t.ticketNumber)}</div>
             <div class="stub-type">${escapeHtml(t.docType)}</div>
             <div class="stub-date">${fmtDate(t.createdAt)}</div>
           </div>
-          <div class="stub-status"><div class="dot" style="background:${st.color}"></div>${st.label}${waitNote}</div>
+          <div class="stub-status" style="--c:${st.color}"><div class="dot" style="background:${st.color}"></div>${st.label}${waitNote}</div>
         </div>
       </div>`;
   }).join("");
   document.querySelectorAll(".ticket-stub").forEach(el=>{
     el.onclick = () => openTicketDetail(el.dataset.key);
+    el.onkeydown = (e) => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); openTicketDetail(el.dataset.key); } };
   });
 }
 
@@ -804,7 +961,7 @@ function fmtDate(ts){
   return d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}) + " · " + d.toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"});
 }
 function escapeHtml(s){
-  return s.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 function blobToDataUrl(blob){
   return new Promise((resolve, reject) => {
@@ -815,35 +972,150 @@ function blobToDataUrl(blob){
   });
 }
 
-/* ---------------- TICKET DETAIL ---------------- */
+/* ---------------- TICKET DETAIL + CHAT ---------------- */
+/* ---------------- VIEWPORT / KEYBOARD ---------------- */
+const coarse = window.matchMedia("(pointer:coarse)");
+function syncViewport(){
+  const vv = window.visualViewport, root = document.documentElement.style;
+  if (vv && Math.abs(vv.scale - 1) < 0.02){
+    root.setProperty("--vvh", vv.height + "px");
+    root.setProperty("--vvt", vv.offsetTop + "px");
+  } else {
+    root.setProperty("--vvh", window.innerHeight + "px");
+    root.setProperty("--vvt", "0px");
+  }
+}
+function setKb(on){ $("ticket-detail-overlay").classList.toggle("kb-open", !!on && coarse.matches); }
+if (window.visualViewport){
+  visualViewport.addEventListener("resize", syncViewport);
+  visualViewport.addEventListener("scroll", syncViewport);
+}
+window.addEventListener("resize", syncViewport);
+window.addEventListener("orientationchange", syncViewport);
+syncViewport();
+
+/* ---------------- TICKET DETAIL (full screen) ---------------- */
+let chatHistoryPushed = false;
+let chatStick = true;
+let renderedIds = [];
+let chatState = { day:"", uid:null };
+let resolveTimer = null;
+let recTimer = null;
+let recDiscard = false;
+
+function isDetailOpen(){ return $("ticket-detail-overlay").classList.contains("show"); }
+
 function openTicketDetail(key){
+  const wasOpen = isDetailOpen();
   openTicketKey = key;
   $("ticket-detail-overlay").classList.add("show");
+  document.body.classList.add("chat-open");
+  syncViewport();
+  if (!wasOpen){
+    // Push a history entry so the phone's Back button closes the chat instead of leaving the site.
+    try{ history.pushState({ dramaChat:true }, ""); chatHistoryPushed = true; } catch(e){ chatHistoryPushed = false; }
+  }
+  renderedIds = []; chatState = { day:"", uid:null }; chatStick = true;
+  $("td-chat-log").innerHTML = "";
+  $("td-text-input").value = ""; autoGrow();
   renderTicketDetailHeader(key);
   switchTdTab("chat");
   listenToMessages(key);
 }
-function closeTicketDetail(){
-  $("ticket-detail-overlay").classList.remove("show");
+function hideTicketDetail(){
+  $("ticket-detail-overlay").classList.remove("show", "kb-open");
+  document.body.classList.remove("chat-open");
   if (ticketMessagesUnsub){ ticketMessagesUnsub(); ticketMessagesUnsub = null; }
+  stopRecording(true);
+  disarmResolve();
+  setLightbox(null);
+  $("td-text-input").blur();
   openTicketKey = null;
 }
+function closeTicketDetail(){
+  if (!isDetailOpen()) return;
+  if (chatHistoryPushed){
+    chatHistoryPushed = false;
+    try{ history.back(); } catch(e){}
+  }
+  hideTicketDetail();
+}
 $("td-close-x").onclick = closeTicketDetail;
-$("ticket-detail-overlay").addEventListener("click", (e) => { if (e.target.id === "ticket-detail-overlay") closeTicketDetail(); });
-
-document.querySelectorAll(".td-tabs button").forEach(b=>{
-  b.onclick = () => switchTdTab(b.dataset.tab);
+window.addEventListener("popstate", () => { chatHistoryPushed = false; if (isDetailOpen()) hideTicketDetail(); });
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  if (!$("lightbox").classList.contains("hidden")) setLightbox(null);
+  else if (isDetailOpen()) closeTicketDetail();
 });
+
+document.querySelectorAll(".td-tabs button").forEach(b=>{ b.onclick = () => switchTdTab(b.dataset.tab); });
 function switchTdTab(tab){
-  document.querySelectorAll(".td-tabs button").forEach(b=>b.classList.toggle("active", b.dataset.tab===tab));
+  document.querySelectorAll(".td-tabs button").forEach(b=>{
+    const on = b.dataset.tab === tab;
+    b.classList.toggle("active", on); b.setAttribute("aria-selected", on ? "true" : "false");
+  });
   $("td-panel-chat").classList.toggle("active", tab==="chat");
   $("td-panel-details").classList.toggle("active", tab==="details");
+  if (tab === "chat"){
+    const log = $("td-chat-log");
+    requestAnimationFrame(() => { if (chatStick) log.scrollTop = log.scrollHeight; });
+  }
+}
+
+/* photo lightbox */
+function setLightbox(src){
+  const lb = $("lightbox"), img = lb.querySelector("img");
+  if (!src){ lb.classList.add("hidden"); img.removeAttribute("src"); return; }
+  img.src = src; lb.classList.remove("hidden");
+}
+$("lightbox").addEventListener("click", () => setLightbox(null));
+$("td-chat-log").addEventListener("click", (e) => {
+  const img = e.target.closest && e.target.closest(".msg img");
+  if (img) setLightbox(img.src);
+});
+
+/* keep the conversation pinned to the newest message unless the reader scrolled up */
+$("td-chat-log").addEventListener("scroll", () => {
+  const log = $("td-chat-log");
+  chatStick = log.scrollHeight - log.scrollTop - log.clientHeight < 80;
+}, { passive:true });
+if (window.ResizeObserver){
+  let prevH = 0;
+  new ResizeObserver(() => {
+    const log = $("td-chat-log");
+    if (chatStick && prevH && log.clientHeight) log.scrollTop = log.scrollHeight;
+    prevH = log.clientHeight;
+  }).observe($("td-chat-log"));
+}
+
+/* resolve button: two taps so a stray tap can't close out a ticket */
+function setResolveLabel(text){
+  const b = $("td-resolve-btn"); b.dataset.base = text;
+  if (!resolveTimer) b.textContent = text;
+}
+function disarmResolve(){
+  clearTimeout(resolveTimer); resolveTimer = null;
+  const b = $("td-resolve-btn"); b.classList.remove("armed");
+  if (b.dataset.base) b.textContent = b.dataset.base;
+}
+
+function setBanner(kind, text, actionLabel, onAction){
+  let b = $("td-banner");
+  if (!kind){ if (b) b.remove(); return; }
+  if (!b){ b = document.createElement("div"); b.id = "td-banner"; $("td-footer").insertAdjacentElement("beforebegin", b); }
+  b.className = "td-banner is-" + kind;
+  b.textContent = "";
+  const s = document.createElement("span"); s.textContent = text; b.appendChild(s);
+  if (actionLabel){
+    const btn = document.createElement("button"); btn.className = "btn-primary"; btn.textContent = actionLabel; btn.onclick = onAction;
+    b.appendChild(btn);
+  }
 }
 
 function renderTicketDetailHeader(key){
   const t = allTickets[key];
   if (!t) return;
-  $("td-title").textContent = t.docType;
+  $("td-title").textContent = t.docType; $("td-title").title = t.docType;
   $("td-num").textContent = t.ticketNumber;
   const st = STATUS_META[t.status] || STATUS_META.open;
   $("td-status-dot").style.background = st.color;
@@ -862,91 +1134,165 @@ function renderTicketDetailHeader(key){
   $("td-details-body").innerHTML = rows.map(([k,v])=>`<div class="review-row"><span>${k}</span><span>${escapeHtml(String(v??"—"))}</span></div>`).join("");
 
   const footer = $("td-footer"), note = $("td-footer-note"), btn = $("td-resolve-btn");
-  if (t.status === "closed"){
+  const closed = t.status === "closed";
+  $("td-composer").classList.toggle("hidden", closed);
+  if (closed) setKb(false);
+
+  if (closed){
     footer.classList.add("hidden");
-    if (!document.getElementById("td-closed-banner")){
-      const b = document.createElement("div"); b.id = "td-closed-banner"; b.className = "closed-banner";
-      b.textContent = "This ticket is closed.";
-      footer.insertAdjacentElement("beforebegin", b);
-    }
+    setBanner("closed", "This ticket is closed.");
   } else {
+    setBanner(null);
     footer.classList.remove("hidden");
-    const existingBanner = document.getElementById("td-closed-banner");
-    if (existingBanner) existingBanner.remove();
     if (t.studentClosed){
       note.textContent = "Waiting for staff to confirm.";
-      btn.disabled = true; btn.textContent = "You marked this resolved";
+      btn.disabled = true; setResolveLabel("You marked this resolved");
     } else {
       note.textContent = t.status === "open" ? "No one has picked this up yet." : "";
-      btn.disabled = false; btn.textContent = "Mark my side resolved";
+      btn.disabled = false; setResolveLabel("Mark my side resolved");
     }
   }
 }
 
 $("td-resolve-btn").onclick = async () => {
   if (!openTicketKey) return;
+  const btn = $("td-resolve-btn");
+  if (!resolveTimer){
+    btn.textContent = "Tap again to confirm"; btn.classList.add("armed");
+    resolveTimer = setTimeout(disarmResolve, 3500);
+    return;
+  }
+  disarmResolve();
   const t = allTickets[openTicketKey];
+  if (!t) return;
   const updates = { studentClosed: true, updatedAt: serverTimestamp() };
   if (t.staffClosed) updates.status = "closed";
-  await update(ref(db, "tickets/" + openTicketKey), updates);
+  try{ await update(ref(db, "tickets/" + openTicketKey), updates); }
+  catch(e){ console.error(e); toast("Couldn't update the ticket. Try again."); }
 };
 
 /* ---------------- CHAT ---------------- */
+function canChat(){ return !!openTicketKey && !!allTickets[openTicketKey] && allTickets[openTicketKey].status !== "closed"; }
+
+function fmtDay(d){
+  const t = new Date(), y = new Date(); y.setDate(t.getDate() - 1);
+  if (d.toDateString() === t.toDateString()) return "Today";
+  if (d.toDateString() === y.toDateString()) return "Yesterday";
+  return d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
+}
+// Only ever render data: URLs of the expected media type, and never anything that could break out of an attribute.
+function safeMediaUrl(u, kind){
+  if (typeof u !== "string") return "";
+  const allowed = kind === "image"
+    ? /^data:image\/(?:jpeg|jpg|png|webp);base64,/i
+    : /^data:audio\/(?:webm|ogg|mp4|mpeg);base64,/i;
+  if (!allowed.test(u) || /["'<>\s]/.test(u)) return "";
+  return u;
+}
+
 function listenToMessages(key){
   if (ticketMessagesUnsub) ticketMessagesUnsub();
-  const mref = ref(db, "tickets/" + key + "/messages");
-  ticketMessagesUnsub = onValue(mref, (snap) => {
+  ticketMessagesUnsub = onValue(ref(db, "ticketMessages/" + key), (snap) => {
     const msgs = [];
-    snap.forEach(c => msgs.push({ id:c.key, ...c.val() }));
+    // NB: braces matter — Firebase's forEach stops as soon as the callback returns a truthy value.
+    snap.forEach(c => { msgs.push({ id:c.key, ...c.val() }); });
     msgs.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
-    renderChatLog(msgs);
-  });
+    if (openTicketKey === key) renderChatLog(msgs);
+  }, (err) => { console.error(err); toast("Couldn't load messages. Check your connection."); });
 }
+
+function msgHtml(m){
+  const mine = m.senderUid === currentUser.uid;
+  const d = m.createdAt ? new Date(m.createdAt) : new Date();
+  let chip = "";
+  const day = d.toDateString();
+  if (day !== chatState.day){ chip = `<div class="day-chip">${escapeHtml(fmtDay(d))}</div>`; chatState.day = day; chatState.uid = null; }
+  const cont = chatState.uid === m.senderUid;
+  chatState.uid = m.senderUid;
+  let body = "";
+  if (m.type === "text") body = `<div class="txt">${escapeHtml(m.text||"")}</div>`;
+  else if (m.type === "image"){
+    const u = safeMediaUrl(m.url, "image");
+    body = u ? `<img src="${u}" alt="Photo sent in chat">` : `<div class="txt">Photo unavailable.</div>`;
+  } else if (m.type === "audio"){
+    const u = safeMediaUrl(m.url, "audio");
+    body = u ? `<audio controls preload="metadata" src="${u}"></audio>` : `<div class="txt">Voice message unavailable.</div>`;
+  }
+  const label = (!mine && !cont) ? `<div class="sender">${escapeHtml(m.senderName || 'Staff')}</div>` : "";
+  const time = m.createdAt ? d.toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"}) : "";
+  return `${chip}<div class="msg ${mine?"me":"them"}${cont?" cont":""}">${label}${body}<time>${time}</time></div>`;
+}
+
+// Messages only ever get appended, so add just the new ones — rebuilding the log would restart any voice message that is playing.
 function renderChatLog(msgs){
   const log = $("td-chat-log");
-  const wasAtBottom = log.scrollTop + log.clientHeight >= log.scrollHeight - 40;
-  log.innerHTML = msgs.map(m => {
-    const mine = m.senderUid === currentUser.uid;
-    let body = "";
-    if (m.type === "text") body = `<div>${escapeHtml(m.text||"")}</div>`;
-    else if (m.type === "image") body = `<img src="${m.url}" alt="photo">`;
-    else if (m.type === "audio") body = `<audio controls src="${m.url}"></audio>`;
-    return `<div class="msg ${mine?'me':'them'}">
-      <div class="sender">${mine?'You':escapeHtml(m.senderName||'Staff')}</div>
-      ${body}
-      <time>${m.createdAt ? new Date(m.createdAt).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}) : ''}</time>
-    </div>`;
-  }).join("");
-  if (wasAtBottom || msgs.length <= 1) log.scrollTop = log.scrollHeight;
+  const ids = msgs.map(m => m.id);
+  const appendOnly = renderedIds.length > 0 && ids.length >= renderedIds.length && renderedIds.every((id,i)=> ids[i] === id);
+  let fresh = msgs;
+  if (appendOnly) fresh = msgs.slice(renderedIds.length);
+  else { chatState = { day:"", uid:null }; log.innerHTML = ""; }
+  renderedIds = ids;
+  if (!msgs.length){
+    log.innerHTML = `<div class="chat-empty"><b>No messages yet</b>${canChat() ? "Say hello — the other side will see it here." : "Messages will show up here once someone writes."}</div>`;
+    return;
+  }
+  if (!fresh.length) return;
+  log.insertAdjacentHTML("beforeend", fresh.map(msgHtml).join(""));
+  if (chatStick) log.scrollTop = log.scrollHeight;
+  log.querySelectorAll("img:not([data-hooked])").forEach(img => {
+    img.dataset.hooked = "1";
+    if (!img.complete) img.addEventListener("load", () => { if (chatStick) log.scrollTop = log.scrollHeight; });
+  });
 }
 
 async function sendMessage(payload){
   if (!openTicketKey) return;
-  const mref = push(ref(db, "tickets/" + openTicketKey + "/messages"));
+  const key = openTicketKey;
+  const mref = push(ref(db, "ticketMessages/" + key));
   await set(mref, {
     senderUid: currentUser.uid,
-    senderName: currentUser.name,
+    senderName: currentUser.name || "User",
     senderRole: "student",
     createdAt: serverTimestamp(),
     ...payload
   });
-  await update(ref(db, "tickets/" + openTicketKey), { updatedAt: serverTimestamp() });
+  await update(ref(db, "tickets/" + key), { updatedAt: serverTimestamp() });
 }
 
-$("td-send-btn").onclick = async () => {
-  const val = $("td-text-input").value.trim();
-  if (!val) return;
-  $("td-text-input").value = "";
-  await sendMessage({ type:"text", text: val });
-};
+function autoGrow(){
+  const ta = $("td-text-input");
+  ta.style.height = "auto";
+  if (!ta.offsetParent || !ta.value){ ta.style.height = ""; return; }
+  ta.style.height = Math.min(ta.scrollHeight + 2, 132) + "px";
+}
+$("td-text-input").addEventListener("input", autoGrow);
+$("td-text-input").addEventListener("focus", () => setKb(true));
+$("td-text-input").addEventListener("blur", () => setKb(false));
+
+async function doSend(){
+  const ta = $("td-text-input");
+  const val = ta.value.trim();
+  if (!val || !openTicketKey || !canChat()) return;
+  ta.value = ""; autoGrow();
+  try{ await sendMessage({ type:"text", text: val }); }
+  catch(e){ console.error(e); ta.value = val; autoGrow(); toast("Couldn't send. Check your connection and try again."); }
+}
+$("td-send-btn").onclick = doSend;
+// keep the keyboard open when tapping Send
+$("td-send-btn").addEventListener("pointerdown", (e) => e.preventDefault());
 $("td-text-input").addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); $("td-send-btn").click(); }
+  // On touch keyboards Enter is a new line; Send button sends. On desktop Enter sends, Shift+Enter is a new line.
+  if (e.key === "Enter" && !e.shiftKey && !e.isComposing && !coarse.matches){ e.preventDefault(); doSend(); }
 });
 
-$("td-attach-btn").onclick = () => $("td-file-input").click();
+$("td-attach-btn").onclick = () => { if (canChat()) $("td-file-input").click(); };
 $("td-file-input").addEventListener("change", async (e) => {
   const file = e.target.files[0];
-  if (!file || !openTicketKey) return;
+  if (!file || !openTicketKey || !canChat()) { e.target.value = ""; return; }
+  if (!/^image\/(?:jpeg|png|webp)$/i.test(file.type)){
+    toast("Please choose a JPG, PNG, or WebP image.");
+    e.target.value = ""; return;
+  }
   if (file.size > 700 * 1024){
     toast("Photo is too large — please pick one under 700 KB.");
     e.target.value = ""; return;
@@ -955,28 +1301,31 @@ $("td-file-input").addEventListener("change", async (e) => {
     toast("Sending photo…");
     const url = await blobToDataUrl(file);
     await sendMessage({ type:"image", url });
-  } catch(err){
-    console.error(err); toast("Couldn't send photo.");
-  } finally {
-    e.target.value = "";
-  }
+  } catch(err){ console.error(err); toast("Couldn't send photo."); }
+  finally { e.target.value = ""; }
 });
 
+function stopRecording(discard){
+  if (mediaRecorder && mediaRecorder.state === "recording"){ recDiscard = !!discard; mediaRecorder.stop(); }
+}
 $("td-record-btn").onclick = async () => {
-  if (mediaRecorder && mediaRecorder.state === "recording"){
-    mediaRecorder.stop();
-    return;
-  }
+  const btn = $("td-record-btn");
+  if (mediaRecorder && mediaRecorder.state === "recording"){ stopRecording(false); return; }
+  if (!canChat()) return;
+  if (!navigator.mediaDevices || !window.MediaRecorder){ toast("Voice messages aren't supported in this browser."); return; }
   try{
     const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
-    audioChunks = [];
-    mediaRecorder = new MediaRecorder(stream);
-    mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
-    mediaRecorder.onstop = async () => {
+    audioChunks = []; recDiscard = false;
+    const rec = new MediaRecorder(stream);
+    mediaRecorder = rec;
+    rec.ondataavailable = (e) => { if (e.data && e.data.size) audioChunks.push(e.data); };
+    rec.onstop = async () => {
+      clearTimeout(recTimer);
       stream.getTracks().forEach(t=>t.stop());
-      $("td-record-btn").classList.remove("recording");
-      const blob = new Blob(audioChunks, { type:"audio/webm" });
-      if (blob.size < 500) return; // too short / cancelled
+      btn.classList.remove("recording"); btn.setAttribute("aria-pressed","false");
+      if (recDiscard) return;
+      const blob = new Blob(audioChunks, { type: rec.mimeType || "audio/webm" });
+      if (blob.size < 500) return;
       if (blob.size > 1.5 * 1024 * 1024){
         toast("Voice message too long — keep it under ~20 seconds."); return;
       }
@@ -986,13 +1335,11 @@ $("td-record-btn").onclick = async () => {
         await sendMessage({ type:"audio", url });
       } catch(err){ console.error(err); toast("Couldn't send voice message."); }
     };
-    mediaRecorder.start();
-    $("td-record-btn").classList.add("recording");
-    toast("Recording… click again to stop.");
-  } catch(err){
-    console.error(err);
-    toast("Microphone access denied or unavailable.");
-  }
+    rec.start();
+    btn.classList.add("recording"); btn.setAttribute("aria-pressed","true");
+    recTimer = setTimeout(() => stopRecording(false), 20000);
+    toast("Recording… tap again to stop (20 s max).");
+  } catch(err){ console.error(err); toast("Microphone access denied or unavailable."); }
 };
   } catch (startupError) {
     console.error("DRAMA startup error:", startupError);

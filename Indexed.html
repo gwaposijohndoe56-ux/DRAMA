@@ -321,7 +321,7 @@
       <div id="signup-form" class="hidden">
         <h2>Create staff account</h2>
         <p class="auth-sub">Requires the staff access code to register.</p>
-        <div class="field"><label>Full name</label><input type="text" id="su-name"></div>
+        <div class="field"><label>Full name</label><input type="text" id="su-name" maxlength="120"></div>
         <div class="field"><label>Email</label><input type="email" id="su-email" autocomplete="username"></div>
         <div class="field"><label>Password</label><input type="password" id="su-pass" autocomplete="new-password"></div>
         <div class="field">
@@ -410,7 +410,7 @@
           <button class="icon-btn" id="td-record-btn" title="Record voice message" aria-label="Record voice message" aria-pressed="false">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg>
           </button>
-          <textarea id="td-text-input" rows="1" placeholder="Write a message…" aria-label="Message"></textarea>
+          <textarea id="td-text-input" rows="1" maxlength="4000" placeholder="Write a message…" aria-label="Message"></textarea>
           <button class="icon-btn send" id="td-send-btn" title="Send" aria-label="Send message">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13M22 2 15 22l-4-9-9-4 20-7Z"/></svg>
           </button>
@@ -442,8 +442,8 @@
       import("https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js")
     ]);
     const { initializeApp } = appMod;
-    const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } = authMod;
-    const { getDatabase, ref, push, set, get, update, onValue, runTransaction, serverTimestamp } = dbMod;
+    const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, deleteUser } = authMod;
+    const { getDatabase, ref, push, set, get, update, onValue, serverTimestamp } = dbMod;
 
 const firebaseConfig = {
   apiKey: "AIzaSyCMn38-vei_6gICI0HR1rqxKxSwN3FrmnY",
@@ -456,9 +456,7 @@ const firebaseConfig = {
   measurementId: "G-8VL8CQ3083"
 };
 
-// Access code required to register a staff account. Change this any time —
-// it only needs to match what you type into the signup form.
-const STAFF_ACCESS_CODE = "123456DRAMAMAMA";
+// The staff access code is checked by the database rules (config/staffCode), so it never ships in this file.
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -549,12 +547,12 @@ $("su-submit").onclick = async () => {
   const name = $("su-name").value.trim();
   const email = $("su-email").value.trim();
   const pass = $("su-pass").value;
-  const code = $("su-code").value;
+  const code = $("su-code").value.trim();
   if (!name || !email || pass.length < 6){
     showAuthMsg("Fill in your name, email, and a password of at least 6 characters.", "error"); return;
   }
-  if (code !== STAFF_ACCESS_CODE){
-    showAuthMsg("Staff access code is incorrect.", "error"); return;
+  if (!code){
+    showAuthMsg("Enter the staff access code.", "error"); return;
   }
   $("su-submit").disabled = true;
   signingUp = true; // stops the auth listener from checking the profile before it exists
@@ -563,13 +561,18 @@ $("su-submit").onclick = async () => {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     created = true;
     await updateProfile(cred.user, { displayName: name });
-    await set(ref(db, "users/" + cred.user.uid), { name, email, role:"staff", createdAt: serverTimestamp() });
+    await set(ref(db, "users/" + cred.user.uid), { name, email, role:"staff", code, createdAt: serverTimestamp() });
     signingUp = false;
     await enterApp(cred.user);
   } catch(e){
     signingUp = false;
-    if (created){ try{ await signOut(auth); }catch(_){} }
-    showAuthMsg(friendlyAuthError(e), "error");
+    // The database rejects the profile when the access code is wrong; remove the half-made account so they can retry.
+    const denied = created && /permission/i.test((e.code || "") + " " + (e.message || ""));
+    if (created){
+      try{ if (denied) await deleteUser(auth.currentUser); else await signOut(auth); }
+      catch(_){ try{ await signOut(auth); }catch(__){} }
+    }
+    showAuthMsg(denied ? "Staff access code is incorrect." : friendlyAuthError(e), "error");
   } finally {
     signingUp = false;
     $("su-submit").disabled = false;
@@ -702,22 +705,13 @@ async function pickUpTicket(key, stayInChat){
   const t = allTickets[key];
   if (!t || t.status !== "open"){ toast("That ticket was already picked up."); return; }
   try{
-    const result = await runTransaction(ref(db, "tickets/" + key), (current) => {
-      if (!current || current.status !== "open") return;
-      return {
-        ...current,
-        status:"in_progress",
-        assignedStaffUid: currentUser.uid,
-        assignedStaffName: currentUser.name || "Staff",
-        updatedAt: Date.now()
-      };
+    await update(ref(db, "tickets/" + key), {
+      status:"in_progress",
+      assignedStaffUid: currentUser.uid,
+      assignedStaffName: currentUser.name || "Staff",
+      updatedAt: serverTimestamp()
     });
-    if (!result.committed){
-      toast("That ticket was already picked up.");
-      return;
-    }
-    const picked = result.snapshot.val() || {};
-    toast("Picked up " + (picked.ticketNumber || t.ticketNumber || "ticket") + ".");
+    toast("Picked up " + (allTickets[key]?.ticketNumber || "ticket") + ".");
     if (!stayInChat) openTicketDetail(key);
   } catch(e){ console.error(e); toast("Couldn't pick up the ticket."); }
 }
@@ -936,21 +930,21 @@ function fmtDay(d){
 }
 // Only ever render data: URLs of the expected media type, and never anything that could break out of an attribute.
 function safeMediaUrl(u, kind){
-  if (typeof u !== "string") return "";
-  const allowed = kind === "image"
-    ? /^data:image\/(?:jpeg|jpg|png|webp);base64,/i
-    : /^data:audio\/(?:webm|ogg|mp4|mpeg);base64,/i;
-  if (!allowed.test(u) || /["'<>\s]/.test(u)) return "";
-  return u;
+  if (typeof u !== "string" || !u.startsWith("data:" + kind + "/")) return "";
+  return /["'<>\s]/.test(u) ? "" : u;
 }
 
 function listenToMessages(key){
   if (ticketMessagesUnsub) ticketMessagesUnsub();
+  // Chats live at ticketMessages/{ticketId}, separate from the ticket, so the ticket lists stay small.
   ticketMessagesUnsub = onValue(ref(db, "ticketMessages/" + key), (snap) => {
-    const msgs = [];
+    const byId = {};
+    // Older chats that were stored inside the ticket itself are still shown.
+    const legacy = (allTickets[key] && allTickets[key].messages) || {};
+    Object.keys(legacy).forEach(id => { byId[id] = { id, ...legacy[id] }; });
     // NB: braces matter — Firebase's forEach stops as soon as the callback returns a truthy value.
-    snap.forEach(c => { msgs.push({ id:c.key, ...c.val() }); });
-    msgs.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+    snap.forEach(c => { byId[c.key] = { id:c.key, ...c.val() }; });
+    const msgs = Object.values(byId).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0) || (a.id < b.id ? -1 : 1));
     if (openTicketKey === key) renderChatLog(msgs);
   }, (err) => { console.error(err); toast("Couldn't load messages. Check your connection."); });
 }
@@ -1043,10 +1037,6 @@ $("td-attach-btn").onclick = () => { if (canChat()) $("td-file-input").click(); 
 $("td-file-input").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file || !openTicketKey || !canChat()) { e.target.value = ""; return; }
-  if (!/^image\/(?:jpeg|png|webp)$/i.test(file.type)){
-    toast("Please choose a JPG, PNG, or WebP image.");
-    e.target.value = ""; return;
-  }
   if (file.size > 700 * 1024){
     toast("Photo is too large — please pick one under 700 KB.");
     e.target.value = ""; return;

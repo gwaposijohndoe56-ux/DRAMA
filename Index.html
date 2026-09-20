@@ -460,7 +460,7 @@
       <div id="signup-form" class="hidden">
         <h2>Create your account</h2>
         <p class="auth-sub">One account tracks every request you open.</p>
-        <div class="field"><label>Full name</label><input type="text" id="su-name" placeholder="Last name, First name Middle name"></div>
+        <div class="field"><label>Full name</label><input type="text" id="su-name" maxlength="120" placeholder="Last name, First name Middle name"></div>
         <div class="field"><label>Email</label><input type="email" id="su-email" autocomplete="username"></div>
         <div class="field"><label>Password</label><input type="password" id="su-pass" autocomplete="new-password"></div>
         <button class="btn-primary" id="su-submit">Create account</button>
@@ -531,7 +531,7 @@
         <div class="field"><label>Email for updates</label><input id="f-email" type="email" autocomplete="email"></div>
         <div class="field hidden" id="f-copies-wrap"><label>Number of copies</label><input id="f-copies" type="number" min="1" value="1"></div>
         <div class="field"><label>Preferred claim / response date</label><input id="f-claimdate" type="date"></div>
-        <div class="field"><label id="f-reason-label">Purpose</label><textarea id="f-reason" rows="4" placeholder="What is this for, and any details staff should know"></textarea></div>
+        <div class="field"><label id="f-reason-label">Purpose</label><textarea id="f-reason" rows="4" maxlength="1500" placeholder="What is this for, and any details staff should know"></textarea></div>
         <div class="form-actions">
           <button class="btn-ghost" id="step2-back">Back</button>
           <button class="btn-primary" id="step2-next">Review</button>
@@ -580,7 +580,7 @@
           <button class="icon-btn" id="td-record-btn" title="Record voice message" aria-label="Record voice message" aria-pressed="false">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg>
           </button>
-          <textarea id="td-text-input" rows="1" placeholder="Write a message…" aria-label="Message"></textarea>
+          <textarea id="td-text-input" rows="1" maxlength="4000" placeholder="Write a message…" aria-label="Message"></textarea>
           <button class="icon-btn send" id="td-send-btn" title="Send" aria-label="Send message">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13M22 2 15 22l-4-9-9-4 20-7Z"/></svg>
           </button>
@@ -613,7 +613,7 @@
     ]);
     const { initializeApp } = appMod;
     const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } = authMod;
-    const { getDatabase, ref, push, set, get, update, onValue, runTransaction, query, orderByChild, equalTo, serverTimestamp } = dbMod;
+    const { getDatabase, ref, push, set, get, update, onValue, runTransaction, serverTimestamp, query, orderByChild, equalTo } = dbMod;
 
 const firebaseConfig = {
   apiKey: "AIzaSyCMn38-vei_6gICI0HR1rqxKxSwN3FrmnY",
@@ -874,30 +874,15 @@ function buildReview(){
   $("review-body").innerHTML = rows.map(([k,v])=>`<div class="review-row"><span>${k}</span><span>${escapeHtml(String(v))}</span></div>`).join("");
 }
 
-function fallbackTicketNumber(seed){
-  // Ticket creation must not depend on a separately-permissioned counter path.
-  // The Firebase push key is unique, so hash it into a six-digit display number.
-  let hash = 0;
-  for (const ch of String(seed || Date.now())) hash = ((hash * 31) + ch.charCodeAt(0)) >>> 0;
-  return "DRM-" + String(100000 + (hash % 900000)).padStart(6, "0");
-}
-
 $("step3-submit").onclick = async () => {
-  const submitBtn = $("step3-submit");
-  submitBtn.disabled = true;
+  $("step3-submit").disabled = true;
   try{
-    if (!currentUser || !selectedDocType){
-      toast("Please sign in and choose a document type first.");
-      return;
-    }
     const fields = collectFields();
+    const counterSnap = await runTransaction(ref(db, "meta/ticketCounter"), (cur) => (cur||0)+1);
+    const ticketNumber = "DRM-" + String(counterSnap.snapshot.val()).padStart(6,"0");
     const newRef = push(ref(db, "tickets"));
-    const fallbackNumber = fallbackTicketNumber(newRef.key);
-
-    // Write the actual ticket first. This is the operation the user is asking for;
-    // a failure on the optional display-number counter must not abort the ticket.
     await set(newRef, {
-      ticketNumber: fallbackNumber,
+      ticketNumber,
       studentUid: currentUser.uid,
       studentName: currentUser.name || currentUser.email || "Student",
       docType: selectedDocType.label,
@@ -910,27 +895,13 @@ $("step3-submit").onclick = async () => {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
-
-    // Keep the existing sequential numbering when the counter path is writable.
-    // Some deployments lock down /meta, so this step is deliberately best-effort.
-    let ticketNumber = fallbackNumber;
-    try{
-      const counterSnap = await runTransaction(ref(db, "meta/ticketCounter"), (cur) => (cur || 0) + 1);
-      if (counterSnap.committed){
-        ticketNumber = "DRM-" + String(counterSnap.snapshot.val()).padStart(6, "0");
-        await update(newRef, { ticketNumber });
-      }
-    } catch(counterError){
-      console.warn("DRAMA ticket counter unavailable; using fallback ticket number.", counterError);
-    }
-
     toast("Ticket " + ticketNumber + " opened.");
     switchView("requests");
   } catch(e){
-    console.error("DRAMA ticket creation error:", e);
-    toast("Couldn't open the ticket. Check your connection and try again.");
+    console.error(e);
+    toast("Couldn't open the ticket. Try again.");
   } finally {
-    submitBtn.disabled = false;
+    $("step3-submit").disabled = false;
   }
 };
 
@@ -943,12 +914,14 @@ const STATUS_META = {
 
 function listenToMyTickets(){
   if (ticketsUnsub) ticketsUnsub();
-  if (!currentUser) return;
-  // Ask Firebase for this student's tickets instead of downloading every student's tickets.
-  const ticketsQuery = query(ref(db, "tickets"), orderByChild("studentUid"), equalTo(currentUser.uid));
-  ticketsUnsub = onValue(ticketsQuery, (snap) => {
+  // Only this student's own tickets (needs .indexOn: studentUid in the database rules).
+  ticketsUnsub = onValue(query(ref(db, "tickets"), orderByChild("studentUid"), equalTo(currentUser.uid)), (snap) => {
+    if (!currentUser) return;
     allTickets = {};
-    snap.forEach(child => { allTickets[child.key] = child.val(); });
+    snap.forEach(child => {
+      const t = child.val();
+      if (t.studentUid === currentUser.uid) allTickets[child.key] = t;
+    });
     renderTicketList();
     if (openTicketKey && allTickets[openTicketKey]) renderTicketDetailHeader(openTicketKey);
   }, (err) => { console.error(err); toast("Couldn't load your requests. Check your connection."); });
@@ -1211,21 +1184,21 @@ function fmtDay(d){
 }
 // Only ever render data: URLs of the expected media type, and never anything that could break out of an attribute.
 function safeMediaUrl(u, kind){
-  if (typeof u !== "string") return "";
-  const allowed = kind === "image"
-    ? /^data:image\/(?:jpeg|jpg|png|webp);base64,/i
-    : /^data:audio\/(?:webm|ogg|mp4|mpeg);base64,/i;
-  if (!allowed.test(u) || /["'<>\s]/.test(u)) return "";
-  return u;
+  if (typeof u !== "string" || !u.startsWith("data:" + kind + "/")) return "";
+  return /["'<>\s]/.test(u) ? "" : u;
 }
 
 function listenToMessages(key){
   if (ticketMessagesUnsub) ticketMessagesUnsub();
+  // Chats live at ticketMessages/{ticketId}, separate from the ticket, so the ticket lists stay small.
   ticketMessagesUnsub = onValue(ref(db, "ticketMessages/" + key), (snap) => {
-    const msgs = [];
+    const byId = {};
+    // Older chats that were stored inside the ticket itself are still shown.
+    const legacy = (allTickets[key] && allTickets[key].messages) || {};
+    Object.keys(legacy).forEach(id => { byId[id] = { id, ...legacy[id] }; });
     // NB: braces matter — Firebase's forEach stops as soon as the callback returns a truthy value.
-    snap.forEach(c => { msgs.push({ id:c.key, ...c.val() }); });
-    msgs.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+    snap.forEach(c => { byId[c.key] = { id:c.key, ...c.val() }; });
+    const msgs = Object.values(byId).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0) || (a.id < b.id ? -1 : 1));
     if (openTicketKey === key) renderChatLog(msgs);
   }, (err) => { console.error(err); toast("Couldn't load messages. Check your connection."); });
 }
@@ -1318,10 +1291,6 @@ $("td-attach-btn").onclick = () => { if (canChat()) $("td-file-input").click(); 
 $("td-file-input").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file || !openTicketKey || !canChat()) { e.target.value = ""; return; }
-  if (!/^image\/(?:jpeg|png|webp)$/i.test(file.type)){
-    toast("Please choose a JPG, PNG, or WebP image.");
-    e.target.value = ""; return;
-  }
   if (file.size > 700 * 1024){
     toast("Photo is too large — please pick one under 700 KB.");
     e.target.value = ""; return;

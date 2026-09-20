@@ -874,15 +874,30 @@ function buildReview(){
   $("review-body").innerHTML = rows.map(([k,v])=>`<div class="review-row"><span>${k}</span><span>${escapeHtml(String(v))}</span></div>`).join("");
 }
 
+function fallbackTicketNumber(seed){
+  // Ticket creation must not depend on a separately-permissioned counter path.
+  // The Firebase push key is unique, so hash it into a six-digit display number.
+  let hash = 0;
+  for (const ch of String(seed || Date.now())) hash = ((hash * 31) + ch.charCodeAt(0)) >>> 0;
+  return "DRM-" + String(100000 + (hash % 900000)).padStart(6, "0");
+}
+
 $("step3-submit").onclick = async () => {
-  $("step3-submit").disabled = true;
+  const submitBtn = $("step3-submit");
+  submitBtn.disabled = true;
   try{
+    if (!currentUser || !selectedDocType){
+      toast("Please sign in and choose a document type first.");
+      return;
+    }
     const fields = collectFields();
-    const counterSnap = await runTransaction(ref(db, "meta/ticketCounter"), (cur) => (cur||0)+1);
-    const ticketNumber = "DRM-" + String(counterSnap.snapshot.val()).padStart(6,"0");
     const newRef = push(ref(db, "tickets"));
+    const fallbackNumber = fallbackTicketNumber(newRef.key);
+
+    // Write the actual ticket first. This is the operation the user is asking for;
+    // a failure on the optional display-number counter must not abort the ticket.
     await set(newRef, {
-      ticketNumber,
+      ticketNumber: fallbackNumber,
       studentUid: currentUser.uid,
       studentName: currentUser.name || currentUser.email || "Student",
       docType: selectedDocType.label,
@@ -895,13 +910,27 @@ $("step3-submit").onclick = async () => {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
+
+    // Keep the existing sequential numbering when the counter path is writable.
+    // Some deployments lock down /meta, so this step is deliberately best-effort.
+    let ticketNumber = fallbackNumber;
+    try{
+      const counterSnap = await runTransaction(ref(db, "meta/ticketCounter"), (cur) => (cur || 0) + 1);
+      if (counterSnap.committed){
+        ticketNumber = "DRM-" + String(counterSnap.snapshot.val()).padStart(6, "0");
+        await update(newRef, { ticketNumber });
+      }
+    } catch(counterError){
+      console.warn("DRAMA ticket counter unavailable; using fallback ticket number.", counterError);
+    }
+
     toast("Ticket " + ticketNumber + " opened.");
     switchView("requests");
   } catch(e){
-    console.error(e);
-    toast("Couldn't open the ticket. Try again.");
+    console.error("DRAMA ticket creation error:", e);
+    toast("Couldn't open the ticket. Check your connection and try again.");
   } finally {
-    $("step3-submit").disabled = false;
+    submitBtn.disabled = false;
   }
 };
 
